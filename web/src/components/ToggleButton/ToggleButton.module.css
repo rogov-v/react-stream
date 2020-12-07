@@ -1,0 +1,70 @@
+label {
+  display: block;
+  position: relative;
+  width: 143px;
+  height: 35px;
+  line-height: 35px;
+  font-size: small;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+label:after {
+  content: "Live";
+  width: 70px;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  display: block;
+  border: 1px solid #a1a9b3;
+  background-color: #e8edf6;
+  color: #3875cc;
+  border-radius: 6px 0 0 6px;
+  text-align: center;
+}
+
+label:before {
+  content: "Pause";
+  width: 70px;
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  display: block;
+  border: 1px solid #bfc2c4;
+  border-radius: 0 6px 6px 0;
+  background-color: #fcfcfc;
+  color: #4e6172;
+  text-align: center;
+}
+
+:checked + label:after {
+  content: "Live";
+  width: 70px;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  display: block;
+  border: 1px solid #bfc2c4;
+  background-color: #fcfcfc;
+  color: #4e6172;
+  border-radius: 6px 0 0 6px;
+  text-align: center;
+}
+
+:checked + label:before {
+  content: "Pause";
+  width: 70px;
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  display: block;
+  border: 1px solid #a1a9b3;
+  background-color: #e8edf6;
+  color: #3875cc;
+  border-radius: 0 6px 6px 0;
+  text-align: center;
+}
+
+.checkbox {
+  display: none;
+}

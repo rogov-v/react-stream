@@ -1,0 +1,19 @@
+.container {
+  display: flex;
+  justify-content: center;
+  background-color: #ff6c6c;
+  border: 1px solid #770000;
+  border-left: none;
+  border-right: none;
+  padding: 15px 30px;
+  line-height: 22px;
+}
+
+.message {
+  color: #770000;
+}
+
+.icon {
+  color: #770000;
+  padding: 0 10px;
+}

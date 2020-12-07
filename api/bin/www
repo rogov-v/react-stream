@@ -1,0 +1,180 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+const app = require('../app');
+const debug = require('debug')('api:server');
+const http = require('http');
+const _ = require('lodash');
+const socketIO = require('socket.io');
+const Redis = require('ioredis');
+const winston = require('winston');
+
+/**
+ * Setup logger.
+ */
+
+winston.loggers.add('default', {
+  console: {
+      colorize: 'true',
+      handleExceptions: true,
+      json: false,
+      level: 'silly',
+      label: 'default',
+  },
+  file: {
+      filename: '/default.log',
+      level: 'silly',
+      json: false,
+      handleExceptions: true,
+  },
+});
+
+const defaultLog = winston.loggers.get('default'); 
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+const port = normalizePort(process.env.PORT || '8080');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+const server = http.createServer(app);
+
+/**
+ * Add socket listener.
+ */
+const io = socketIO(server);
+const redis = new Redis();
+const activeSockets = [];
+const pendingEvents = [];
+
+
+io.on('connection', (socket) => {
+  activeSockets.push(socket);
+  defaultLog.info('Socket connected. Active sockets:', activeSockets.length);
+
+  socket.on('disconnect', () => {
+    activeSockets.splice(activeSockets.indexOf(socket), 1);
+    defaultLog.info('Socket disconnected. Active sockets:', activeSockets.length);
+  });
+});
+
+redis.subscribe('events', (err, count) => {
+  if (err) {
+    defaultLog.error('Failed subscribing to events stream', err);
+    return;
+  }
+
+  if (count !== 1) {
+    defaultLog.error('Unexpected number of subscribed channels', count);
+  }
+});
+
+const emitPendingEvents = _.throttle(() => {
+  if (pendingEvents.length === 0) {
+    return;
+  }
+
+  defaultLog.info('Emitting %d events to %d sockets',
+    pendingEvents.length,
+    activeSockets.length);
+
+  _.each(activeSockets, (socket) => {
+    socket.emit('events', pendingEvents);
+  });
+
+  pendingEvents.splice(0, pendingEvents.length);
+}, 2000);
+
+redis.on('message', (channel, message) => {
+  if (channel !== 'events') {
+    defaultLog.warn('Unexpected message to channel', channel, message);
+    return;
+  }
+
+  emitPendingEvents();
+  pendingEvents.unshift(JSON.parse(message));
+});
+
+redis.on('error', (error) => {
+  defaultLog.error('Redis', error);
+
+  _.each(activeSockets, (socket) => {
+    socket.emit('error', error);
+  });
+});
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  const port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  const bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  const addr = server.address();
+  const bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}

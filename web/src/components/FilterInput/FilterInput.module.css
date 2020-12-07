@@ -1,0 +1,21 @@
+.container {
+  width: 80%;
+}
+
+.input {
+  border-radius: 6px;
+  border: 1px solid #bfc2c4;
+  height: 35px;
+  width: -webkit-fill-available;
+  padding: 0 35px;
+  color: #4e6172;
+  line-height: 35px;
+  font-size: small;
+  font-weight: 500;
+}
+
+.icon {
+  position: absolute;
+  margin: 6px;
+  color: #7f8b99;
+}
